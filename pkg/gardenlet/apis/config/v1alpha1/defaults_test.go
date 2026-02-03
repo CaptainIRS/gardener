@@ -7,6 +7,7 @@ package v1alpha1_test
 import (
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -706,9 +707,17 @@ var _ = Describe("Defaults", func() {
 			SetObjectDefaults_GardenletConfiguration(obj)
 
 			Expect(obj.ETCDConfig).NotTo(BeNil())
-			Expect(obj.ETCDConfig.ETCDController).NotTo(BeNil())
-			Expect(obj.ETCDConfig.CustodianController).NotTo(BeNil())
-			Expect(obj.ETCDConfig.BackupCompactionController).NotTo(BeNil())
+			Expect(obj.ETCDConfig.OperatorConfig).NotTo(BeNil())
+		})
+
+		It("should not overwrite already set values for the deprecated delta snapshot retention period", func() {
+			obj.ETCDConfig = &ETCDConfig{
+				DeltaSnapshotRetentionPeriod: ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+			}
+			SetObjectDefaults_GardenletConfiguration(obj)
+
+			Expect(obj.ETCDConfig.BackupRestoreConfig).NotTo(BeNil())
+			Expect(obj.ETCDConfig.BackupRestoreConfig.DeltaSnapshotRetentionPeriod).To(PointTo(Equal(metav1.Duration{Duration: 48 * time.Hour})))
 		})
 	})
 
@@ -716,47 +725,45 @@ var _ = Describe("Defaults", func() {
 		It("should default the ETCD controller", func() {
 			SetObjectDefaults_GardenletConfiguration(obj)
 
-			Expect(obj.ETCDConfig.ETCDController.Workers).To(PointTo(Equal(int64(50))))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Etcd.ConcurrentSyncs).To(PointTo(Equal(50)))
 		})
 
-		It("should not overwrite already set values for the ETCD controller", func() {
+		It("should not overwrite already set values for the deprecated ETCD controller configuration", func() {
 			obj.ETCDConfig = &ETCDConfig{
 				ETCDController: &ETCDController{Workers: ptr.To[int64](5)},
 			}
 			SetObjectDefaults_GardenletConfiguration(obj)
 
-			Expect(obj.ETCDConfig.ETCDController.Workers).To(PointTo(Equal(int64(5))))
-		})
-	})
-
-	Describe("CustodianController defaulting", func() {
-		It("should default the ETCD custodian controller", func() {
-			SetObjectDefaults_GardenletConfiguration(obj)
-
-			Expect(obj.ETCDConfig.CustodianController.Workers).To(PointTo(Equal(int64(10))))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Etcd.ConcurrentSyncs).To(PointTo(Equal(5)))
 		})
 
-		It("should not overwrite already set values for the ETCD custodian controller", func() {
+		It("should not overwrite already set values for the ETCD controller configuration through OperatorConfiguration", func() {
 			obj.ETCDConfig = &ETCDConfig{
-				CustodianController: &CustodianController{Workers: ptr.To[int64](5)},
+				OperatorConfig: &EtcdDruidOperatorConfiguration{
+					Controllers: druidconfigv1alpha1.ControllerConfiguration{
+						Etcd: druidconfigv1alpha1.EtcdControllerConfiguration{
+							ConcurrentSyncs: ptr.To(5),
+						},
+					},
+				},
 			}
 			SetObjectDefaults_GardenletConfiguration(obj)
 
-			Expect(obj.ETCDConfig.CustodianController.Workers).To(PointTo(Equal(int64(5))))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Etcd.ConcurrentSyncs).To(PointTo(Equal(5)))
 		})
 	})
 
-	Describe("BackupCompactionController defaulting", func() {
-		It("should default the ETCD backup compaction controller", func() {
+	Describe("CompactionController defaulting", func() {
+		It("should default the ETCD operator's compaction controller", func() {
 			SetObjectDefaults_GardenletConfiguration(obj)
 
-			Expect(obj.ETCDConfig.BackupCompactionController.Workers).To(PointTo(Equal(int64(3))))
-			Expect(obj.ETCDConfig.BackupCompactionController.EnableBackupCompaction).To(PointTo(Equal(false)))
-			Expect(obj.ETCDConfig.BackupCompactionController.EventsThreshold).To(PointTo(Equal(int64(1000000))))
-			Expect(obj.ETCDConfig.BackupCompactionController.MetricsScrapeWaitDuration).To(PointTo(Equal(metav1.Duration{Duration: 60 * time.Second})))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.ConcurrentSyncs).To(PointTo(Equal(3)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.Enabled).To(Equal(false))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.EventsThreshold).To(Equal(int64(1000000)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration).To(Equal(metav1.Duration{Duration: 60 * time.Second}))
 		})
 
-		It("should not overwrite already set values for the ETCD backup compaction controller", func() {
+		It("should not overwrite already set values for the deprecated ETCD backup compaction controller configuration", func() {
 			v := metav1.Duration{Duration: 30 * time.Second}
 			obj.ETCDConfig = &ETCDConfig{
 				BackupCompactionController: &BackupCompactionController{
@@ -767,10 +774,32 @@ var _ = Describe("Defaults", func() {
 				}}
 			SetObjectDefaults_GardenletConfiguration(obj)
 
-			Expect(obj.ETCDConfig.BackupCompactionController.Workers).To(PointTo(Equal(int64(4))))
-			Expect(obj.ETCDConfig.BackupCompactionController.EnableBackupCompaction).To(PointTo(Equal(true)))
-			Expect(obj.ETCDConfig.BackupCompactionController.EventsThreshold).To(PointTo(Equal(int64(900000))))
-			Expect(obj.ETCDConfig.BackupCompactionController.MetricsScrapeWaitDuration).To(PointTo(Equal(v)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.ConcurrentSyncs).To(PointTo(Equal(4)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.Enabled).To(Equal(true))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.EventsThreshold).To(Equal(int64(900000)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration).To(Equal(v))
+		})
+
+		It("should not overwrite already set values for the ETCD compaction controller configuration through OperatorConfiguration", func() {
+			v := metav1.Duration{Duration: 30 * time.Second}
+			obj.ETCDConfig = &ETCDConfig{
+				OperatorConfig: &EtcdDruidOperatorConfiguration{
+					Controllers: druidconfigv1alpha1.ControllerConfiguration{
+						Compaction: druidconfigv1alpha1.CompactionControllerConfiguration{
+							ConcurrentSyncs:           ptr.To(4),
+							Enabled:                   true,
+							EventsThreshold:           900000,
+							MetricsScrapeWaitDuration: v,
+						},
+					},
+				},
+			}
+			SetObjectDefaults_GardenletConfiguration(obj)
+
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.ConcurrentSyncs).To(PointTo(Equal(4)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.Enabled).To(Equal(true))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.EventsThreshold).To(Equal(int64(900000)))
+			Expect(obj.ETCDConfig.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration).To(Equal(v))
 		})
 	})
 

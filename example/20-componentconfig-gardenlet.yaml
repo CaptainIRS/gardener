@@ -167,16 +167,26 @@ logging:
 #       labels:
 #         network: internal
 etcdConfig:
-  etcdController:
-    workers: 3
-  custodianController:
-    workers: 3
-  backupCompactionController:
-    workers: 3
-    enableBackupCompaction: false
-    eventsThreshold: 1000000
-    activeDeadlineDuration: "3h"
-    metricsScrapeWaitDuration: "60s"
+  operatorConfig:
+    controllers:
+      etcd:
+        concurrentSyncs: 3
+      compaction:
+        concurrentSyncs: 3
+        enabled: false
+        eventsThreshold: 1000000
+        activeDeadlineDuration: "3h"
+        metricsScrapeWaitDuration: "60s"
+# etcdController: (Deprecated, use etcdConfig.operatorConfig.controllers.etcd instead)
+#   workers: 3
+# custodianController: (Deprecated, custodian controller no longer exists)
+#   workers: 3
+# backupCompactionController: (Deprecated, use etcdConfig.operatorConfig.controllers.compaction instead)
+#   workers: 3
+#   enableBackupCompaction: false
+#   eventsThreshold: 1000000
+#   activeDeadlineDuration: "3h"
+#   metricsScrapeWaitDuration: "60s"
   deltaSnapshotRetentionPeriod: 48h
 # backupLeaderElection:
 #   reelectionPeriod: 5s

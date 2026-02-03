@@ -20,7 +20,6 @@ import (
 	seedmanagementv1alpha1 "github.com/gardener/gardener/pkg/apis/seedmanagement/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/etcd/etcd"
 	"github.com/gardener/gardener/pkg/component/shared"
-	gardenletconfigv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 	"github.com/gardener/gardener/pkg/gardenlet/operation/shoot"
 	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/gardener/gardener/pkg/utils/timewindow"
@@ -109,12 +108,10 @@ func (b *Botanist) DeployEtcd(ctx context.Context) error {
 		}
 
 		var (
-			backupLeaderElection         *gardenletconfigv1alpha1.ETCDBackupLeaderElection
 			deltaSnapshotRetentionPeriod *metav1.Duration
 		)
-		if b.Config != nil && b.Config.ETCDConfig != nil {
-			backupLeaderElection = b.Config.ETCDConfig.BackupLeaderElection
-			deltaSnapshotRetentionPeriod = b.Config.ETCDConfig.DeltaSnapshotRetentionPeriod
+		if b.Config != nil && b.Config.ETCDConfig != nil && b.Config.ETCDConfig.BackupRestoreConfig != nil {
+			deltaSnapshotRetentionPeriod = b.Config.ETCDConfig.BackupRestoreConfig.DeltaSnapshotRetentionPeriod
 		}
 
 		b.Shoot.Components.ControlPlane.EtcdMain.SetBackupConfig(&etcd.BackupConfig{
@@ -123,7 +120,6 @@ func (b *Botanist) DeployEtcd(ctx context.Context) error {
 			Prefix:                       b.Shoot.BackupEntryName,
 			Container:                    string(secret.Data[v1beta1constants.DataKeyBackupBucketName]),
 			FullSnapshotSchedule:         snapshotSchedule,
-			LeaderElection:               backupLeaderElection,
 			DeltaSnapshotRetentionPeriod: deltaSnapshotRetentionPeriod,
 		})
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	druidcorev1alpha1 "github.com/gardener/etcd-druid/api/core/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -249,12 +250,17 @@ var _ = Describe("Garden controller tests", func() {
 						ConcurrentSyncs: ptr.To(5),
 						SyncPeriod:      &metav1.Duration{Duration: time.Minute},
 						ETCDConfig: &gardenletconfigv1alpha1.ETCDConfig{
-							ETCDController:      &gardenletconfigv1alpha1.ETCDController{Workers: ptr.To[int64](5)},
-							CustodianController: &gardenletconfigv1alpha1.CustodianController{Workers: ptr.To[int64](5)},
-							BackupCompactionController: &gardenletconfigv1alpha1.BackupCompactionController{
-								EnableBackupCompaction: ptr.To(false),
-								Workers:                ptr.To[int64](5),
-								EventsThreshold:        ptr.To[int64](100),
+							OperatorConfig: &gardenletconfigv1alpha1.EtcdDruidOperatorConfiguration{
+								Controllers: druidconfigv1alpha1.ControllerConfiguration{
+									Etcd: druidconfigv1alpha1.EtcdControllerConfiguration{
+										ConcurrentSyncs: ptr.To(5),
+									},
+									Compaction: druidconfigv1alpha1.CompactionControllerConfiguration{
+										Enabled:         false,
+										ConcurrentSyncs: ptr.To(5),
+										EventsThreshold: 100,
+									},
+								},
 							},
 						},
 					},

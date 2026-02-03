@@ -66,7 +66,6 @@ import (
 	"github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/features"
-	gardenletconfigv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/flow"
 	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
@@ -845,11 +844,6 @@ func (r *Reconciler) deployEtcdsFunc(garden *operatorv1alpha1.Garden, etcdMain, 
 				return err
 			}
 
-			var backupLeaderElection *gardenletconfigv1alpha1.ETCDBackupLeaderElection
-			if r.Config.Controllers.Garden.ETCDConfig != nil {
-				backupLeaderElection = r.Config.Controllers.Garden.ETCDConfig.BackupLeaderElection
-			}
-
 			secretRefName := backup.SecretRef.Name
 			if backupBucket.Status.GeneratedSecretRef != nil {
 				secretRefName = backupBucket.Status.GeneratedSecretRef.Name
@@ -863,7 +857,6 @@ func (r *Reconciler) deployEtcdsFunc(garden *operatorv1alpha1.Garden, etcdMain, 
 				Container:            container,
 				Prefix:               prefix,
 				FullSnapshotSchedule: snapshotSchedule,
-				LeaderElection:       backupLeaderElection,
 			})
 		}
 

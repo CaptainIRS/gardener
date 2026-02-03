@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	druidcorev1alpha1 "github.com/gardener/etcd-druid/api/core/v1alpha1"
 	"github.com/go-logr/logr"
@@ -21,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
@@ -37,7 +35,6 @@ import (
 	fakekubernetes "github.com/gardener/gardener/pkg/client/kubernetes/fake"
 	"github.com/gardener/gardener/pkg/component/etcd/etcd"
 	mocketcd "github.com/gardener/gardener/pkg/component/etcd/etcd/mock"
-	gardenletconfigv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 	"github.com/gardener/gardener/pkg/gardenlet/operation"
 	. "github.com/gardener/gardener/pkg/gardenlet/operation/botanist"
 	seedpkg "github.com/gardener/gardener/pkg/gardenlet/operation/seed"
@@ -323,9 +320,6 @@ var _ = Describe("Etcd", func() {
 						"bucketName": []byte(bucketName),
 					},
 				}
-				backupLeaderElectionConfig = &gardenletconfigv1alpha1.ETCDBackupLeaderElection{
-					ReelectionPeriod: &metav1.Duration{Duration: 2 * time.Second},
-				}
 
 				expectGetBackupSecret = func() {
 					c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: "etcd-backup"}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(
@@ -342,7 +336,6 @@ var _ = Describe("Etcd", func() {
 						Prefix:               namespace + "--" + string(shootUID),
 						Container:            bucketName,
 						FullSnapshotSchedule: "1 12 * * *",
-						LeaderElection:       backupLeaderElectionConfig,
 					})
 				}
 			)
@@ -350,11 +343,6 @@ var _ = Describe("Etcd", func() {
 			BeforeEach(func() {
 				botanist.Seed.GetInfo().Spec.Backup = &gardencorev1beta1.Backup{
 					Provider: backupProvider,
-				}
-				botanist.Config = &gardenletconfigv1alpha1.GardenletConfiguration{
-					ETCDConfig: &gardenletconfigv1alpha1.ETCDConfig{
-						BackupLeaderElection: backupLeaderElectionConfig,
-					},
 				}
 			})
 

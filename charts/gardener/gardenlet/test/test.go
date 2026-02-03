@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -837,17 +838,35 @@ func ComputeExpectedGardenletConfiguration(
 			},
 		},
 		ETCDConfig: &gardenletconfigv1alpha1.ETCDConfig{
-			BackupCompactionController: &gardenletconfigv1alpha1.BackupCompactionController{
-				EnableBackupCompaction:    ptr.To(false),
-				EventsThreshold:           ptr.To[int64](1000000),
-				MetricsScrapeWaitDuration: &metav1.Duration{Duration: 60 * time.Second},
-				Workers:                   ptr.To[int64](3),
-			},
-			CustodianController: &gardenletconfigv1alpha1.CustodianController{
-				Workers: ptr.To[int64](10),
-			},
-			ETCDController: &gardenletconfigv1alpha1.ETCDController{
-				Workers: ptr.To[int64](50),
+			OperatorConfig: &gardenletconfigv1alpha1.EtcdDruidOperatorConfiguration{
+				Controllers: druidconfigv1alpha1.ControllerConfiguration{
+					Etcd: druidconfigv1alpha1.EtcdControllerConfiguration{
+						ConcurrentSyncs:                    ptr.To(50),
+						DisableEtcdServiceAccountAutomount: true,
+						EtcdStatusSyncPeriod:               metav1.Duration{Duration: druidconfigv1alpha1.DefaultEtcdStatusSyncPeriod},
+						EtcdMember: druidconfigv1alpha1.EtcdMemberConfiguration{
+							NotReadyThreshold: metav1.Duration{Duration: druidconfigv1alpha1.DefaultEtcdNotReadyThreshold},
+							UnknownThreshold:  metav1.Duration{Duration: druidconfigv1alpha1.DefaultEtcdUnknownThreshold},
+						},
+					},
+					Compaction: druidconfigv1alpha1.CompactionControllerConfiguration{
+						Enabled:                   false,
+						EventsThreshold:           1000000,
+						MetricsScrapeWaitDuration: metav1.Duration{Duration: 60 * time.Second},
+						ConcurrentSyncs:           ptr.To(3),
+					},
+					EtcdCopyBackupsTask: druidconfigv1alpha1.EtcdCopyBackupsTaskControllerConfiguration{
+						Enabled:         true,
+						ConcurrentSyncs: ptr.To(druidconfigv1alpha1.DefaultEtcdCopyBackupsTaskConcurrentSyncs),
+					},
+					EtcdOpsTask: druidconfigv1alpha1.EtcdOpsTaskControllerConfiguration{
+						ConcurrentSyncs: ptr.To(druidconfigv1alpha1.DefaultEtcdOpsTaskControllerConcurrentSyncs),
+						RequeueInterval: &metav1.Duration{Duration: druidconfigv1alpha1.DefaultEtcdOpsRequeueInterval},
+					},
+					Secret: druidconfigv1alpha1.SecretControllerConfiguration{
+						ConcurrentSyncs: ptr.To(druidconfigv1alpha1.DefaultSecretControllerConcurrentSyncs),
+					},
+				},
 			},
 		},
 		NodeToleration: &gardenletconfigv1alpha1.NodeToleration{

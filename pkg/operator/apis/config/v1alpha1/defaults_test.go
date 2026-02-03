@@ -7,6 +7,7 @@ package v1alpha1_test
 import (
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -195,15 +196,11 @@ var _ = Describe("Defaults", func() {
 				Expect(obj.Controllers.Garden.ConcurrentSyncs).To(PointTo(Equal(1)))
 				Expect(obj.Controllers.Garden.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
 				Expect(obj.Controllers.Garden.ETCDConfig).NotTo(BeNil())
-				Expect(obj.Controllers.Garden.ETCDConfig.ETCDController).NotTo(BeNil())
-				Expect(obj.Controllers.Garden.ETCDConfig.ETCDController.Workers).To(PointTo(Equal(int64(50))))
-				Expect(obj.Controllers.Garden.ETCDConfig.CustodianController).NotTo(BeNil())
-				Expect(obj.Controllers.Garden.ETCDConfig.CustodianController.Workers).To(PointTo(Equal(int64(10))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController).NotTo(BeNil())
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.Workers).To(PointTo(Equal(int64(3))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.EnableBackupCompaction).To(PointTo(Equal(false)))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.EventsThreshold).To(PointTo(Equal(int64(1000000))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.MetricsScrapeWaitDuration).To(PointTo(Equal(metav1.Duration{Duration: 60 * time.Second})))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Etcd.ConcurrentSyncs).To(PointTo(Equal(50)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.ConcurrentSyncs).To(PointTo(Equal(3)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.Enabled).To(Equal(false))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.EventsThreshold).To(Equal(int64(1000000)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration).To(Equal(metav1.Duration{Duration: 60 * time.Second}))
 			})
 
 			It("should not overwrite already set values for Garden controller config", func() {
@@ -213,13 +210,18 @@ var _ = Describe("Defaults", func() {
 							ConcurrentSyncs: ptr.To(5),
 							SyncPeriod:      &metav1.Duration{Duration: time.Second},
 							ETCDConfig: &v1alpha1.ETCDConfig{
-								ETCDController:      &v1alpha1.ETCDController{Workers: ptr.To[int64](5)},
-								CustodianController: &v1alpha1.CustodianController{Workers: ptr.To[int64](5)},
-								BackupCompactionController: &v1alpha1.BackupCompactionController{
-									Workers:                   ptr.To[int64](4),
-									EnableBackupCompaction:    ptr.To(true),
-									EventsThreshold:           ptr.To[int64](900000),
-									MetricsScrapeWaitDuration: &metav1.Duration{Duration: 30 * time.Second},
+								OperatorConfig: &v1alpha1.EtcdDruidOperatorConfiguration{
+									Controllers: druidconfigv1alpha1.ControllerConfiguration{
+										Etcd: druidconfigv1alpha1.EtcdControllerConfiguration{
+											ConcurrentSyncs: ptr.To(5),
+										},
+										Compaction: druidconfigv1alpha1.CompactionControllerConfiguration{
+											ConcurrentSyncs:           ptr.To(4),
+											Enabled:                   true,
+											EventsThreshold:           900000,
+											MetricsScrapeWaitDuration: metav1.Duration{Duration: 30 * time.Second},
+										},
+									},
 								},
 							},
 						},
@@ -230,12 +232,11 @@ var _ = Describe("Defaults", func() {
 
 				Expect(obj.Controllers.Garden.ConcurrentSyncs).To(PointTo(Equal(5)))
 				Expect(obj.Controllers.Garden.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Second})))
-				Expect(obj.Controllers.Garden.ETCDConfig.ETCDController.Workers).To(PointTo(Equal(int64(5))))
-				Expect(obj.Controllers.Garden.ETCDConfig.CustodianController.Workers).To(PointTo(Equal(int64(5))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.Workers).To(PointTo(Equal(int64(4))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.EnableBackupCompaction).To(PointTo(Equal(true)))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.EventsThreshold).To(PointTo(Equal(int64(900000))))
-				Expect(obj.Controllers.Garden.ETCDConfig.BackupCompactionController.MetricsScrapeWaitDuration).To(PointTo(Equal(metav1.Duration{Duration: 30 * time.Second})))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Etcd.ConcurrentSyncs).To(PointTo(Equal(5)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.ConcurrentSyncs).To(PointTo(Equal(4)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.Enabled).To(Equal(true))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.EventsThreshold).To(Equal(int64(900000)))
+				Expect(obj.Controllers.Garden.ETCDConfig.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration).To(Equal(metav1.Duration{Duration: 30 * time.Second}))
 			})
 		})
 

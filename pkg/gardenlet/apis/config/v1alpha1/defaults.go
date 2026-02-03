@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/utils/ptr"
@@ -496,14 +497,64 @@ func SetDefaults_Logging(obj *Logging) {
 
 // SetDefaults_ETCDConfig sets defaults for the ETCD.
 func SetDefaults_ETCDConfig(obj *ETCDConfig) {
-	if obj.ETCDController == nil {
-		obj.ETCDController = &ETCDController{}
+	if obj.OperatorConfig == nil {
+		obj.OperatorConfig = &EtcdDruidOperatorConfiguration{}
+
+		// Adapt the deprecated ETCDConfig fields to OperatorConfig if specified
+		if obj.ETCDController != nil {
+			SetDefaults_ETCDController(obj.ETCDController)
+			obj.OperatorConfig.Controllers.Etcd = druidconfigv1alpha1.EtcdControllerConfiguration{
+				ConcurrentSyncs: ptr.To(int(*obj.ETCDController.Workers)),
+			}
+		}
+		if obj.BackupCompactionController != nil {
+			SetDefaults_BackupCompactionController(obj.BackupCompactionController)
+			obj.OperatorConfig.Controllers.Compaction = druidconfigv1alpha1.CompactionControllerConfiguration{
+				ConcurrentSyncs:           ptr.To(int(*obj.BackupCompactionController.Workers)),
+				Enabled:                   *obj.BackupCompactionController.EnableBackupCompaction,
+				EventsThreshold:           *obj.BackupCompactionController.EventsThreshold,
+				MetricsScrapeWaitDuration: *obj.BackupCompactionController.MetricsScrapeWaitDuration,
+			}
+		}
+		if obj.FeatureGates != nil {
+			obj.OperatorConfig.FeatureGates = obj.FeatureGates
+		}
 	}
-	if obj.CustodianController == nil {
-		obj.CustodianController = &CustodianController{}
+
+	// Set Gardener defaults followed by etcd-druid defaults for the Etcd controller
+	if obj.OperatorConfig.Controllers.Etcd.ConcurrentSyncs == nil {
+		obj.OperatorConfig.Controllers.Etcd.ConcurrentSyncs = ptr.To(50)
 	}
-	if obj.BackupCompactionController == nil {
-		obj.BackupCompactionController = &BackupCompactionController{}
+	obj.OperatorConfig.Controllers.Etcd.DisableEtcdServiceAccountAutomount = true
+	obj.OperatorConfig.Controllers.Etcd.EnableEtcdSpecAutoReconcile = false
+	druidconfigv1alpha1.SetDefaults_EtcdControllerConfiguration(&obj.OperatorConfig.Controllers.Etcd)
+
+	// Set Gardener defaults followed by etcd-druid defaults for the Compaction controller
+	if obj.OperatorConfig.Controllers.Compaction.ConcurrentSyncs == nil {
+		obj.OperatorConfig.Controllers.Compaction.ConcurrentSyncs = ptr.To(3)
+	}
+	if obj.OperatorConfig.Controllers.Compaction.EventsThreshold == 0 {
+		obj.OperatorConfig.Controllers.Compaction.EventsThreshold = 1000000
+	}
+	if obj.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration.Duration == 0 {
+		obj.OperatorConfig.Controllers.Compaction.MetricsScrapeWaitDuration = metav1.Duration{Duration: 60 * time.Second}
+	}
+	druidconfigv1alpha1.SetDefaults_CompactionControllerConfiguration(&obj.OperatorConfig.Controllers.Compaction)
+
+	// Set Gardener defaults followed by etcd-druid defaults for the EtcdCopyBackupsTask controller
+	// Preserve backwards-compatibility with CLI flags where the EtcdCopyBackupsTask is enabled by default
+	obj.OperatorConfig.Controllers.EtcdCopyBackupsTask.Enabled = true
+	druidconfigv1alpha1.SetDefaults_EtcdCopyBackupsTaskControllerConfiguration(&obj.OperatorConfig.Controllers.EtcdCopyBackupsTask)
+
+	// Set etcd-druid defaults for the EtcdOpsTask controller
+	druidconfigv1alpha1.SetDefaults_EtcdOpsTaskControllerConfiguration(&obj.OperatorConfig.Controllers.EtcdOpsTask)
+
+	// Migrate deprecated DeltaSnapshotRetentionPeriod to BackupRestoreConfig if set and not already set there
+	if obj.DeltaSnapshotRetentionPeriod != nil && (obj.BackupRestoreConfig == nil || obj.BackupRestoreConfig.DeltaSnapshotRetentionPeriod == nil) {
+		if obj.BackupRestoreConfig == nil {
+			obj.BackupRestoreConfig = &EtcdBackupRestoreConfiguration{}
+		}
+		obj.BackupRestoreConfig.DeltaSnapshotRetentionPeriod = obj.DeltaSnapshotRetentionPeriod
 	}
 }
 

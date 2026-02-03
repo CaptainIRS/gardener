@@ -87,9 +87,6 @@ func SetDefaults_GardenControllerConfig(obj *GardenControllerConfig) {
 	}
 
 	gardenletconfigv1alpha1.SetDefaults_ETCDConfig(obj.ETCDConfig)
-	gardenletconfigv1alpha1.SetDefaults_ETCDController(obj.ETCDConfig.ETCDController)
-	gardenletconfigv1alpha1.SetDefaults_CustodianController(obj.ETCDConfig.CustodianController)
-	gardenletconfigv1alpha1.SetDefaults_BackupCompactionController(obj.ETCDConfig.BackupCompactionController)
 }
 
 // SetDefaults_GardenCareControllerConfiguration sets defaults for the GardenCareControllerConfiguration object.

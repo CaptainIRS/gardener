@@ -43,7 +43,6 @@ import (
 	"github.com/gardener/gardener/pkg/component/observability/monitoring/prometheus/shoot"
 	monitoringutils "github.com/gardener/gardener/pkg/component/observability/monitoring/utils"
 	"github.com/gardener/gardener/pkg/controllerutils"
-	gardenletconfigv1alpha1 "github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -177,8 +176,6 @@ type BackupConfig struct {
 	Prefix string
 	// FullSnapshotSchedule is a cron schedule that declares how frequent full snapshots shall be taken.
 	FullSnapshotSchedule string
-	// LeaderElection contains configuration for the leader election for the etcd backup-restore sidecar.
-	LeaderElection *gardenletconfigv1alpha1.ETCDBackupLeaderElection
 	// DeltaSnapshotRetentionPeriod defines the duration for which delta snapshots will be retained, excluding the latest snapshot set.
 	DeltaSnapshotRetentionPeriod *metav1.Duration
 }
@@ -407,13 +404,6 @@ func (e *etcd) Deploy(ctx context.Context) error {
 			e.etcd.Spec.Backup.DeltaSnapshotPeriod = &deltaSnapshotPeriod
 			e.etcd.Spec.Backup.DeltaSnapshotMemoryLimit = ptr.To(resource.MustParse("100Mi"))
 			e.etcd.Spec.Backup.DeltaSnapshotRetentionPeriod = e.values.BackupConfig.DeltaSnapshotRetentionPeriod
-
-			if e.values.BackupConfig.LeaderElection != nil {
-				e.etcd.Spec.Backup.LeaderElection = &druidcorev1alpha1.LeaderElectionSpec{
-					EtcdConnectionTimeout: e.values.BackupConfig.LeaderElection.EtcdConnectionTimeout,
-					ReelectionPeriod:      e.values.BackupConfig.LeaderElection.ReelectionPeriod,
-				}
-			}
 		}
 
 		if e.values.RunsAsStaticPod {

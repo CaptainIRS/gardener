@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -581,23 +582,55 @@ type SNIIngress struct {
 // ETCDConfig contains ETCD related configs
 type ETCDConfig struct {
 	// ETCDController contains config specific to ETCD controller
+	// Deprecated: This field is deprecated in favor of OperatorConfig.Controllers.Etcd and will be removed in future releases.
 	// +optional
 	ETCDController *ETCDController `json:"etcdController,omitempty"`
 	// CustodianController contains config specific to custodian controller
+	// Deprecated: This field is deprecated as custodian controller is no longer used and will be removed in future releases.
 	// +optional
 	CustodianController *CustodianController `json:"custodianController,omitempty"`
 	// BackupCompactionController contains config specific to backup compaction controller
+	// Deprecated: This field is deprecated in favor of OperatorConfig.Controllers.Compaction and will be removed in future releases.
 	// +optional
 	BackupCompactionController *BackupCompactionController `json:"backupCompactionController,omitempty"`
 	// BackupLeaderElection contains configuration for the leader election for the etcd backup-restore sidecar.
+	// Deprecated: This field is deprecated and will be removed in future releases.
 	// +optional
 	BackupLeaderElection *ETCDBackupLeaderElection `json:"backupLeaderElection,omitempty"`
+	// FeatureGates is a map of feature names to bools that enable or disable alpha/experimental
+	// features. This field modifies piecemeal the built-in default values from
+	// "github.com/gardener/etcd-druid/internal/features/features.go".
+	// Deprecated: This field is deprecated in favor of OperatorConfig.FeatureGates and will be removed in future releases.
+	// Default: nil
+	// +optional
+	FeatureGates map[string]bool `json:"featureGates,omitempty"`
+	// DeltaSnapshotRetentionPeriod defines the duration for which delta snapshots will be retained, excluding the latest snapshot set.
+	// Deprecated: This field is deprecated in favor of EtcdBackupRestoreConfiguration.DeltaSnapshotRetentionPeriod and will be removed in future releases.
+	// +optional
+	DeltaSnapshotRetentionPeriod *metav1.Duration `json:"deltaSnapshotRetentionPeriod,omitempty"`
+	// OperatorConfig contains configuration for the etcd operator.
+	// +optional
+	OperatorConfig *EtcdDruidOperatorConfiguration `json:"operatorConfig,omitempty"`
+	// BackupRestoreConfig contains configuration for the etcd backup-restore sidecar.
+	// +optional
+	BackupRestoreConfig *EtcdBackupRestoreConfiguration `json:"backupRestoreConfig,omitempty"`
+}
+
+// EtcdDruidOperatorConfiguration contains configuration for the etcd operator.
+type EtcdDruidOperatorConfiguration struct {
+	// Controllers contains configuration for the etcd operator controllers.
+	// +optional
+	Controllers druidconfigv1alpha1.ControllerConfiguration `json:"controllers,omitempty"`
 	// FeatureGates is a map of feature names to bools that enable or disable alpha/experimental
 	// features. This field modifies piecemeal the built-in default values from
 	// "github.com/gardener/etcd-druid/internal/features/features.go".
 	// Default: nil
 	// +optional
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
+}
+
+// EtcdBackupRestoreConfiguration contains configuration for the etcd backup-restore sidecar.
+type EtcdBackupRestoreConfiguration struct {
 	// DeltaSnapshotRetentionPeriod defines the duration for which delta snapshots will be retained, excluding the latest snapshot set.
 	// +optional
 	DeltaSnapshotRetentionPeriod *metav1.Duration `json:"deltaSnapshotRetentionPeriod,omitempty"`

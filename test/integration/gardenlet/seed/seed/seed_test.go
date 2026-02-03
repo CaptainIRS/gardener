@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	druidconfigv1alpha1 "github.com/gardener/etcd-druid/api/config/v1alpha1"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -146,16 +147,17 @@ var _ = Describe("Seed controller tests", func() {
 					},
 				},
 				ETCDConfig: &gardenletconfigv1alpha1.ETCDConfig{
-					BackupCompactionController: &gardenletconfigv1alpha1.BackupCompactionController{
-						EnableBackupCompaction: ptr.To(false),
-						EventsThreshold:        ptr.To[int64](1),
-						Workers:                ptr.To[int64](1),
-					},
-					CustodianController: &gardenletconfigv1alpha1.CustodianController{
-						Workers: ptr.To[int64](1),
-					},
-					ETCDController: &gardenletconfigv1alpha1.ETCDController{
-						Workers: ptr.To[int64](1),
+					OperatorConfig: &gardenletconfigv1alpha1.EtcdDruidOperatorConfiguration{
+						Controllers: druidconfigv1alpha1.ControllerConfiguration{
+							Etcd: druidconfigv1alpha1.EtcdControllerConfiguration{
+								ConcurrentSyncs: ptr.To(1),
+							},
+							Compaction: druidconfigv1alpha1.CompactionControllerConfiguration{
+								Enabled:         false,
+								EventsThreshold: 1,
+								ConcurrentSyncs: ptr.To(1),
+							},
+						},
 					},
 				},
 				SeedConfig: &gardenletconfigv1alpha1.SeedConfig{

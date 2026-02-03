@@ -110,8 +110,6 @@ var _ = Describe("Etcd", func() {
 				},
 			},
 		}
-		backupLeaderElectionEtcdConnectionTimeout = &metav1.Duration{Duration: 10 * time.Second}
-		backupLeaderElectionReelectionPeriod      = &metav1.Duration{Duration: 11 * time.Second}
 
 		vpaUpdateMode       = vpaautoscalingv1.UpdateModeRecreate
 		containerPolicyOff  = vpaautoscalingv1.ContainerScalingModeOff
@@ -368,13 +366,6 @@ var _ = Describe("Etcd", func() {
 				obj.Spec.Backup.DeltaSnapshotPeriod = &deltaSnapshotPeriod
 				obj.Spec.Backup.DeltaSnapshotRetentionPeriod = &metav1.Duration{Duration: 15 * 24 * time.Hour}
 				obj.Spec.Backup.DeltaSnapshotMemoryLimit = &deltaSnapshotMemoryLimit
-
-				if backupConfig.LeaderElection != nil {
-					obj.Spec.Backup.LeaderElection = &druidcorev1alpha1.LeaderElectionSpec{
-						EtcdConnectionTimeout: backupLeaderElectionEtcdConnectionTimeout,
-						ReelectionPeriod:      backupLeaderElectionReelectionPeriod,
-					}
-				}
 			}
 
 			if runAsStaticPod {
